@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=quotedevaf3aalex;AccountKey=Gubr1Vrquz3sMFfqPqSn+GZWhfucDdc+3zo/IisttexFzErGoup/DSHBHBjtb2Tinn075YrzuwWn6/Kp1RTZsA==;EndpointSuffix=core.windows.net",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "SubscriptionId": "7cb696aa-fbad-4fd5-a351-0a8a0d8ea71f",
+    "TenantId": "a7c3910c-7394-4583-a196-2c4bb25f2154",
+    "AppID": "24baef63-24f5-4d07-a106-2b64d60e532c",
+    "AppKey": "4CHXxv/O3iUGbAglAn9XBb1o25L0AmqTalXncsdA4SE=",
+    "StorageConnection": "DefaultEndpointsProtocol=https;AccountName=quotedevaf3aalex;AccountKey=Gubr1Vrquz3sMFfqPqSn+GZWhfucDdc+3zo/IisttexFzErGoup/DSHBHBjtb2Tinn075YrzuwWn6/Kp1RTZsA==;EndpointSuffix=core.windows.net",
+    "policyNoDeployID": "DeniedDeployment",
+    "policyLimitedID": "LimitedDeployment"
+  }
+}
