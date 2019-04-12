@@ -1,0 +1,7 @@
+﻿Quotes
+
+Settings
+Name |  | Description | Source
+
+vCoreCount  99  Default Quote per Group Default
+Active      True   Monitoring Status for New Group  Default

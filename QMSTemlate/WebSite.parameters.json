@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "centralus"
+    },
+    "webapp_sites_name": {
+      "value": "AQuote-Mon-Alex"
+    },
+    "funapp_sites_name": {
+      "value": "AQuote-Mon-Fun-Alex"
+    },
+    "appinsights-fun-name": {
+      "value": "aquote-fun-dev-alex"
+    },
+     "appinsights-web-name": {
+      "value": "aquote-dev-bb636"
+    },
+    "storage-acc-name": {
+      "value": "aquotedevaf3aalex"
+    }   
+  }
+}

@@ -1,0 +1,73 @@
+﻿@using System.Security.Principal
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "UserInfo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@if (User.Identity.IsAuthenticated)
+{
+    var identity = User.Identity as ClaimsIdentity; // V2 specific
+    string preferred_username = identity.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
+    <p>User: @preferred_username</p>
+}
+
+<h2>Explore Claims.</h2>
+
+<table class="table table-bordered table-striped">
+    <tr>
+        <th style="width: 20%">
+            Type
+        </th>
+        <th style="width: auto">
+            Value (ValueType)
+        </th>
+    </tr>
+    @{
+        if (System.Security.Claims.ClaimsPrincipal.Current != null)
+        {
+            foreach (var claim in System.Security.Claims.ClaimsPrincipal.Current.Claims)
+            {
+                <tr>
+                    <td>
+                        @claim.Type
+                    </td>
+                    <td>
+                        <b>
+                            @claim.Value
+                        </b>
+                        <br />
+                        (
+                        @claim.ValueType
+                        )
+                    </td>
+                </tr>
+            }
+        } }
+</table>
+
+<h2>Check Roles.</h2>
+
+
+<table class="table table-bordered table-striped">
+    <tr>
+        <th style="width: 20%">
+            Role
+        </th>
+        <th style="width: auto">
+            Is In Role
+        </th>
+    </tr>
+    @foreach (var role in new string[] { "QMSManager" })
+    {
+        <tr>
+            <td>
+                @role
+            </td>
+            <td>
+                @User.IsInRole(role)
+            </td>
+        </tr>
+    }
+</table>
+

@@ -1,0 +1,1 @@
+az policy definition create --display-name "[Temporary] Limited VM Size Deployment Allowed in Resource Group" --description "Limited Policy" --rules "policy_vmsize.json" --mode All --name "LimitedDeployment" --params "policy_vmsize_param.json"

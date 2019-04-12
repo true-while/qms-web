@@ -1,0 +1,11 @@
+{
+  "allowedVMsize": {
+    "type": "Array",
+    "metadata": 
+    {
+      "displayName": "Allowed VMSize for deploying",
+      "description": "The list of allowed VM size for deploying based on vCore numbers.",
+      "strongType": "allowedVMsize"
+    }
+  }
+}

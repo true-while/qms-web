@@ -1,0 +1,309 @@
+﻿@model QuoteManagement.Models.Group
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    
+}
+<br />
+<div id="forceBtn" class="btn btn-default" href="" >Force Policy Check</div>
+<br />
+<br />
+
+@await Html.PartialAsync("~/Views/Shared/_Subscription.cshtml")
+<table id="flex"></table>
+
+
+
+<div id="dialog-form" title="Group Bulk update">
+    <p class="validateTips">Following fields will be updated for each of selected group.</p>
+    <form>
+        <fieldset>
+            <label for="sgroup" id="sgroup" name="sgroup"></label>
+            <table class="bulk">
+                <tr class="head"><td>Upd</td><td>Name</td><td>Value</td></tr>
+                <tr><td><input id="vCoreChecked" type="checkbox" checked="checked" /></td>
+                <td><label for="vCore">vCore Quote Limit:</label></td>
+                <td><input type="text" name="vCore" id="vCore" size="5" value="@ViewData["quote_limit"]" class="text ui-widget-content ui-corner-all"></td></tr>
+                <tr><td><input id="enblChecked" type="checkbox" checked="" /></td>
+                <td><label for="enbl">Governance Enabled:</label></td>
+                <td><select class="text ui-widget-content ui-corner-all" id="sltEnbl">
+    @{
+        if ((bool)ViewData["quote_enabled"])
+        {
+            <option selected value="1">Enabled</option>
+            <option value="0">Disabled</option> }
+        else
+        {
+            <option value="1">Enabled</option>
+            <option value="0" selected>Disabled</option>}
+    }
+</select></td></tr>
+</table>
+            <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+        </fieldset>
+    </form>
+</div>
+
+<div id="dialog-force" title="Policy Check Forced">
+    <p id="force-msg">The policy check might takes a few minutes. Are you want to continue?</p> 
+    <p id="force-result"></p>
+</div>
+
+
+
+    @section Scripts{
+        <script>
+            var curSub = '@(ViewData["selected_subscription"])';
+            var curSubName = '@(ViewData["selected_subscription_name"])';
+            var titleHead = 'Resource Groups';
+            var arrGrID = [];
+            var forceDialog;
+            var forcelink = "Home/ForcePolicies/@ViewData["selected_subscription"]";
+            document.getElementById('forceBtn').setAttribute("href", forcelink);
+            $("#dialog-form").hide();
+            $("#dialog-force").hide();
+
+        $(function () {
+            $.ajaxSetup({ cache: false });
+                       
+            $("#flex").flexigrid(
+                {
+                    url: '/Home/Getdata/' + curSub,
+                    method: 'GET',
+                    dataType: 'json',
+                    colModel: [
+                        { display: 'Actions', name: 'Actions', width: 60, sortable: true, align: 'left' },
+                        { display: '', name: 'ID', width: 0, hide: true, sortable: true, align: 'left' },
+                        { display: 'Name', name: 'Name', width: 380, sortable: true, align: 'left' },
+                        { display: 'Subscription Name', name: 'SubscriptionID', width: 220, sortable: false, align: 'left' },
+                        { display: 'vCore Count', name: 'CurrentcCore', width: 90, sortable: true, align: 'right' },
+                        { display: 'vCore Quote', name: 'Quote', width: 90, sortable: true, align: 'right' },
+                        { display: 'Enabled', name: 'IsEnabled', width: 70, sortable: true, align: 'left' },
+                        { display: 'Check Date', name: 'ReviewDate', width: 180, sortable: true, align: 'left' },
+                    ],
+                    searchitems: [
+                        { display: 'Name', name: 'Name', isdefault: true },
+                    ],
+                    sortname: "Name",
+                    sortorder: "asc",
+                    usepager: true,
+                    title: titleHead + ' ' + curSubName,
+                    useRp: true,
+                    rp: 20,
+                    rpOptions: [20, 30, 50],
+                    showTableToggleBtn: false,
+                    resizable: false,
+                    singleSelect: true,
+                    width: 'auto',
+                    height: 465,
+                    cache: false,
+                    multisel: true,
+                    nomsg: 'No resource group found for this subscription',
+                    buttons: [
+                        { name: 'Bulk update', id: 'Blk', tooltip: 'Bulk update selected items', bimage: '/images/bulk.png', onpress: bulk },
+                        { separator: true },
+                    ]
+                });
+            
+            $('#subList').on('change',
+                function () {
+                    curSub = this.value;
+
+                    var expiration_date = new Date();
+                    var cookie_string = '';
+                    expiration_date.setFullYear(expiration_date.getFullYear() + 1);
+                    cookie_string = "sb=" + curSub + "; path=/; expires=" + expiration_date.toUTCString();
+                    document.cookie = cookie_string;
+
+                    $("#flex")
+                        .flexOptions({ url: '/Home/Getdata/' + curSub })
+                        .flexOptions({ title: titleHead + ' ' + curSub })
+                        .flexReload();
+
+                    //update force link
+                    var link = document.getElementById('forceBtn').getAttribute("href");
+                    link = link.replace(/\/[^/]*$/i, '/' + curSub);
+                    document.getElementById('forceBtn').setAttribute("href",link);
+                });
+
+            var dialog, form,
+                vCore = $("#vCore"),
+                enbl = $("#sltEnbl"),
+                sgroup = $("#sgroup"),
+                chCore = $("#vCoreChecked"),
+                chEnbl = $("#enblChecked"),
+                allFields = $([]).add(vCore).add(enbl).add(chCore).add(chEnbl),
+                tips = $(".validateTips");
+
+            function updateTips(t) {
+                tips
+                    .text(t)
+                    .addClass("ui-state-highlight");
+                setTimeout(function () {
+                    tips.removeClass("ui-state-highlight", 1500);
+                }, 500);
+            }
+
+            function updateGroup() {
+                var valid = true;
+
+                allFields.removeClass("ui-state-error");
+                valid = valid && checkLength(vCore, "vCore", 1, 4);
+                valid = valid && checkRegexp(vCore, /^-?([0-9])+$/i, "vCore must be a number (-1 - no limitation)");
+
+                if (valid) {
+
+                    $.ajax({
+                        url: '/Home/BulkUpdate/' + curSub,
+                        type: "POST",
+                        data: { Groups: arrGrID, chCore: chCore.prop('checked'), vCore: vCore.val(), chEnbl: chEnbl.prop('checked'), Enbl: + enbl.val() },
+                        dataType: 'json',
+                        success: function (data) { alert(data.message); $("#flex").flexReload() },
+                        fail: function (data) { alert(data.message); $("#flex").flexReload() }
+                    });
+
+                    dialog.dialog("close");
+                }
+                return valid;
+            }
+
+            function checkLength(o, n, min, max) {
+                if (o.val().length > max || o.val().length < min) {
+                    o.addClass("ui-state-error");
+                    updateTips("Length of " + n + " must be between " + min + " and " + max + ".");
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+
+            function checkRegexp(o, regexp, n) {
+                if (!(regexp.test(o.val()))) {
+                    o.addClass("ui-state-error");
+                    updateTips(n);
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+
+            function forcePolicyCheck() {
+                var link = document.getElementById('forceBtn').getAttribute("href");
+                $('#force-msg').hide();
+                $('#force-result').text("Policy check in progress... please wait.");
+                $('#dialog-force').siblings('.ui-dialog-buttonpane').find('button').eq(0).hide();
+                $('#dialog-force').siblings('.ui-dialog-buttonpane').find('button').eq(1).hide();
+                $('#dialog-force').siblings('.ui-dialog-buttonpane').find('button').eq(2).hide();
+
+                $.ajax({
+                    url: link,
+                    timeout: 10000000,
+                    type: "GET",
+                    dataType: 'json',
+                    success: function (data) {
+                        $('#forceBtn').prop("disabled", false);
+                        $('#force-result').text(data.message);
+                        $('#dialog-force').siblings('.ui-dialog-buttonpane').find('button').eq(2).show();
+                        $("#flex").flexigrid().flexReload();
+                    },
+                    fail: function (data) {
+                        $('#forceBtn').prop("disabled", false);
+                        $('#force-result').text(data.message);
+                        $('#dialog-force').siblings('.ui-dialog-buttonpane').find('button').eq(2).show();
+                        $("#flex").flexigrid().flexReload();
+                        
+                    },
+                    statusCode: {
+                        500: function () {
+                            $('#forceBtn').prop("disabled", false);
+                            $('#force-result').text("Internal error occur while forcing policy!");
+                        }
+                    }
+                });
+            }
+
+             forceDialog = $("#dialog-force").dialog({
+                autoOpen: false,
+                height: 200,
+                width: 450,
+                modal: true,
+                buttons: {
+                    "Force": forcePolicyCheck,
+                    Cancel: function () {
+                        forceDialog.dialog("close");
+                    },
+                    "Ok": function () {
+                        forceDialog.dialog("close");
+                    }
+                }
+            });
+
+            $('#forceBtn').click(
+                function () {
+                    $('#forceBtn').prop("disabled", true);
+                    $("#force-msg").show();
+                    $('#force-result').text("");
+                    $('#dialog-force').siblings('.ui-dialog-buttonpane').find('button').eq(0).show();
+                    $('#dialog-force').siblings('.ui-dialog-buttonpane').find('button').eq(1).show();
+                    $('#dialog-force').siblings('.ui-dialog-buttonpane').find('button').eq(2).hide();
+                    forceDialog.dialog("open");
+                });
+
+            dialog = $("#dialog-form").dialog({
+                autoOpen: false,
+                height: 350,
+                width: 350,
+                modal: true,
+                buttons: {
+                    "Update Groups": updateGroup,
+                    Cancel: function () {
+                        dialog.dialog("close");
+                    }
+                },
+                close: function () {
+                    form[0].reset();
+                    allFields.removeClass("ui-state-error");
+                }
+            });
+
+            form = dialog.find("form").on("submit", function (event) {
+                event.preventDefault();
+                updateGroup();
+            });
+
+            function bulk() {
+                arrGrID = [];
+                $('#flex .trSelected').each(function () {
+                    arrGrID.push($('[abbr="ID"]', this).text());
+                });
+
+                if (arrGrID.length > 0) {
+                    sgroup.text(arrGrID.length + ' groups selected');
+                    dialog.dialog("open");
+                } else { alert('Please select at least one group from table') }
+            };
+
+            function AjaxFailHandler(jqXHR) {
+                if (jqXHR.status == 403) { alert('Access Denied') }
+            }
+
+ 
+            $.ajax({
+                url: '/Account/IsManager',
+                type: "GET",
+                dataType: 'json',
+                success: function (data) {
+                    if (!data) {
+                        $("#forceBtn").hide();  //Hide Force Btn
+                        $("#flex").flexToggleCol(0, false); //Hide Acction colum
+                        $('#Blk').hide();  //Hide Bulk btn
+                        $('#SettLink').hide();  //Hide Settings link
+                    }
+                },
+                fail: AjaxFailHandler
+            });
+
+        });
+
+        </script>
+    }
